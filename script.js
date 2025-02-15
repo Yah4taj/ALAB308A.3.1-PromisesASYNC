@@ -18,53 +18,84 @@ import { central, db1, db2, db3, vault } from "./database.js";
 
 
 async function getUserData(id) {
-  // const dbs = {
-  //   db1: db1,
-  //   db2: db2,
-  //   db3: db3,
-  // };
+  try {
+    if (typeof id !== "number" || id < 1 || id > 10) {
+      throw new Error("Invalid Input -- ID must be a number from 1-10");
+    }
 
-  try{
-    if (typeof id !== "number" || id <1 || id>10 ) throw new Error("Invalid Input -- ID must be a number from 1-10");
+    const dbs = { db1, db2, db3 };
+    const identifyUserFromCentral = await central(id);
     
-  
+    if (!dbs[identifyUserFromCentral]) {
+      throw new Error(`Invalid database identifier: ${identifyUserFromCentral}`);
+    }
 
-  const dbs ={db1, db2, db3}
-  
-  const identifyUserFromCentral = await central(id)
-  
-  const [databaseInfo, vaultInfo] = await Promise.all([dbs[identifyUserFromCentral](id), vault(id)])
-  return {
-    // id: id,
-  name: vaultInfo.name,
-  username: databaseInfo.username,
-  email: vaultInfo.email,
-  address: {
-    street: vaultInfo.address.street,
-    suite: vaultInfo.address.suite,
-    city: vaultInfo.address.city,
-    zipcode: vaultInfo.address.zipcode,
-  },
-  geo: {
-    lat: vaultInfo.lat,
-    lng: vaultInfo.lng,
-  },
-    phone: vaultInfo.phone,
-   website: databaseInfo.website,
-  company: {
-    name: databaseInfo.company.name,
-    catchPhrase: databaseInfo.company.catchPhrase,
-    bs: databaseInfo.company.bs,
+    const [databaseInfo, vaultInfo] = await Promise.all([
+      dbs[identifyUserFromCentral](id),
+      vault(id)
+    ]);
+
+    return {
+      id,
+      name: vaultInfo.name,
+      username: databaseInfo.username,
+      email: vaultInfo.email,
+      address: {
+        street: vaultInfo.address.street,
+        suite: vaultInfo.address.suite,
+        city: vaultInfo.address.city,
+        zipcode: vaultInfo.address.zipcode,
+      },
+      geo: {
+        lat: vaultInfo.lat,
+        lng: vaultInfo.lng,
+      },
+      phone: vaultInfo.phone,
+      website: databaseInfo.website,
+      company: {
+        name: databaseInfo.company.name,
+        catchPhrase: databaseInfo.company.catchPhrase,
+        bs: databaseInfo.company.bs,
+      }
+    };
+  } catch (error) {
+    throw error;  // This ensures the Promise is properly rejected
   }
 }
 
-
-} catch (error) {
-  console.error(error)
-};
+// Test valid ID
+async function testValidId() {
+    try {
+        const data = await getUserData(8);
+        console.log('Success for ID 7:', data);
+    } catch (error) {
+        console.error('Error with ID 7:', error.message);
+    }
 }
-console.log(getUserData(3));
 
-getUserData(3).then((data)=> console.log(data))
- 
+// Test invalid ID (above 10)
+async function testInvalidHighId() {
+    try {
+        const data = await getUserData(11);
+        console.log('Success for ID 11:', data);
+    } catch (error) {
+        console.error('Error with ID 11:', error.message);
+    }
+}
 
+// Test invalid ID (below 1)
+async function testInvalidLowId() {
+    try {
+        const data = await getUserData(0);
+        console.log('Success for ID 0:', data);
+    } catch (error) {
+        console.error('Error with ID 0:', error.message);
+    }
+}
+
+// Run all tests
+console.log('Running tests...\n');
+
+testValidId();
+testInvalidHighId();
+testInvalidLowId();
